@@ -32,7 +32,7 @@ function onConnection(socket) {
 function startGame(players) {
 	// TODO: Maybe shuffle players ?
 	for (var i = 0; i < players.length; ++i) {
-		var socket = players[index];
+		var socket = players[i];
 		
 		socket.on('move', function(message) {
 			handleMoveRequest(i, players, message);
@@ -44,7 +44,7 @@ function startGame(players) {
 			handleScoreRequest(i, players, message);
 		});
 		
-		socket.emit('start game', {
+		socket.emit('start', {
 			'index': i
 		});
 	}
