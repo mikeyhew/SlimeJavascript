@@ -639,6 +639,17 @@ var GAME_STATE_SHOW_WINNER = 5;
   }
 
   // Menu Functions
+  function startOnePlayer() {
+    return start(true);
+  }
+  function startTwoPlayer() {
+    return start(false);
+  }
+  function startOnlineGame() {
+    var socket = io();
+    socket.emit('message type', 'content');
+    return start(false);
+  }
   function start(startAsOnePlayer) {
     onePlayer = startAsOnePlayer;
 
@@ -685,8 +696,9 @@ var GAME_STATE_SHOW_WINNER = 5;
   function toInitialMenu() {
     menuDiv.innerHTML = '<div style="text-align:center;">' +
       '<h1 style="margin-top:30px;">Slime Volleyball</h1>' +
-      '<span onclick="start(true)" class="btn" style="display:inline-block;margin:20px 30px 20px 30px;font-size:40px;">One Player</span>' +
-      '<span onclick="start(false)" class="btn" style="display:inline-block;margin:20px 30px 20px 30px;font-size:40px;">Two Player</span>' +
+      '<span onclick="startOnePlayer()" class="btn menubutton">One Player</span>' +
+      '<span onclick="startTwoPlayer()" class="btn menubutton">Two Player</span>' +
+      '<span onclick="startOnlineGame()" class="btn menubutton">Play Online</span>' +
       '<p>Originally written by Quin Pendragon and Daniel Wedge (http://oneslime.net)<br/>' +
       'Rewritten by Jonathan Marler</p>'
       '</div>';

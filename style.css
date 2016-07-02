@@ -39,6 +39,11 @@ h2 {margin: 8px 0;}
   background-image: -o-linear-gradient(top, #3cb0fd, #3498db);
   background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
 }
+.menubutton {
+  display: inline-block;
+  margin: 20px 30px 20px 30px;
+  font-size:40px;
+}
 input[type='checkbox'] {
   margin-right: 1em;
 }
