@@ -44,6 +44,9 @@ var gameWidth,gameHeight;
 var ball;
 var slimeLeft;
 var slimeRight;
+var slimes;
+var playerIndex = null;
+var socket = null;
 var slimeLeftScore;
 var slimeRightScore;
 var slimeAI;
@@ -127,6 +130,7 @@ function bodyload() {
 	ball = newLegacyBall(25, '#ff0');
 	slimeLeft = newLegacySlime(true, 100, '#0f0');
 	slimeRight = newLegacySlime(false, 100, '#f00');
+	slimes = [slimeLeft, slimeRight];
 
 	loadBackground('sky', 'images/sky2.jpg');
 	loadBackground('cave', 'images/cave.jpg');
@@ -154,22 +158,28 @@ function toInitialMenu() {
 
 // Menu Functions
 function startOnePlayer() {
+	playerIndex = null;
+	socket = null;
 	return start(true);
 }
 function startTwoPlayer() {
+	playerIndex = null;
+	socket = null;
 	return start(false);
 }
 function startOnlineGame() {
-	var socket = io();
+	playerIndex = null;
+	socket = io();
 	gameState = GAME_STATE_WAIT_OPPONENT;
 	setMessage('Waiting for opponent...');
 	socket.emit('message type', 'content');
 	socket.on('start', function(message) {
-		start(false, socket, message.index);
+		playerIndex = message.index;
+		start(false);
 	});
 }
 
-function start(startAsOnePlayer, socket, index) {
+function start(startAsOnePlayer) {
 	onePlayer = startAsOnePlayer;
 
 	slimeLeftScore = 0;
@@ -207,7 +217,7 @@ function start(startAsOnePlayer, socket, index) {
 			socket.on('move', function(message) {
 				otherInput = message.input;
 			});
-			if (index === 0) {
+			if (playerIndex === 0) {
 				slimeLeft.getInput = wrapInputToNetwork(getSinglePlayerInput, socket, slimeLeft);
 				slimeRight.getInput = getOtherInput;
 			} else {
