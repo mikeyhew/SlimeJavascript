@@ -22,3 +22,49 @@ addEventListener("keyup", function(e) {
     //console.log("keyup   '" + e.keyCode + "'");
     keysDown[e.keyCode] = false;
 }, false);
+
+
+function getSinglePlayerInput() {
+	var input1 = getPlayerOneInput();
+	var input2 = getPlayerTwoInput();
+	return {
+		left: input1.left || input2.left,
+		right: input1.right || input2.right,
+		jump: input1.jump || input2.jump
+	};
+}
+
+function getPlayerOneInput() {
+	return {
+		left: keysDown[KEY_A],
+		right: keysDown[KEY_D],
+		jump: keysDown[KEY_W]
+	};
+}
+
+function getPlayerTwoInput() {
+	return {
+		left: keysDown[KEY_LEFT],
+		right: keysDown[KEY_RIGHT],
+		jump: keysDown[KEY_UP]
+	};
+}
+
+function wrapInputToNetwork(inputFun, socket) {
+	var cached = {
+		left: false,
+		right: false,
+		jump: false
+	};
+	return function() {
+		var input = inputFun();
+		if (input.left != cached.left ||
+		    input.right != cached.right ||
+		    input.jump != cached.jump) {
+			cached = input;
+			var message = { input: input };
+			socket.emit('move', message);
+		}
+		return input;
+	};
+}

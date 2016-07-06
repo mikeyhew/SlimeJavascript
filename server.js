@@ -32,22 +32,25 @@ function onConnection(socket) {
 function startGame(players) {
 	// TODO: Maybe shuffle players ?
 	for (var i = 0; i < players.length; ++i) {
-		var socket = players[i];
-		
-		socket.on('move', function(message) {
-			handleMoveRequest(i, players, message);
-		});
-		socket.on('ball', function(message) {
-			handleMoveRequest(i, players, message);
-		});
-		socket.on('score', function(message) {
-			handleScoreRequest(i, players, message);
-		});
-		
-		socket.emit('start', {
-			'index': i
-		});
+		startPlayer(i, players);
 	}
+}
+
+function startPlayer(index, players) {
+	var socket = players[index];
+	socket.on('move', function(message) {
+		handleMoveRequest(index, players, message);
+	});
+	socket.on('ball', function(message) {
+		handleMoveRequest(index, players, message);
+	});
+	socket.on('score', function(message) {
+		handleScoreRequest(index, players, message);
+	});
+
+	socket.emit('start', {
+		'index': index
+	});
 }
 
 function handleMoveRequest(index, players, message) {

@@ -147,7 +147,7 @@ function setPatheticWhiteSlime(ai) {
       }
       return;
     }
-    
+
     if (Math.abs(this.meToEnemyWall - xWhenBallBelow125) < something)
     {
       if (me.y != 0 || Math.random() < 0.3)
@@ -284,7 +284,7 @@ function setAngryRedSlime(ai) {
       }
       return;
     }
-    
+
     if (Math.abs(this.meToEnemyWall - xWhenBallBelow125) < something)
     {
       if (me.y != 0 || Math.random() < 0.3)
@@ -512,7 +512,7 @@ function setMasterSlime(ai) {
           (this.meToEnemyWall <= 580 && this.ballToEnemyWall < 530 &&
 	     Math.abs(this.ballToEnemyWall - this.meToEnemyWall) < 100)) {
         this.jump();
-      } else if (this.ballToEnemyWall != this.meToEnemyWall && 
+      } else if (this.ballToEnemyWall != this.meToEnemyWall &&
         Math.pow(this.ballToEnemyWall - this.meToEnemyWall,2) * 2 + Math.pow(ball.y - me.y,2) < Math.pow(185,2)) {
         this.jump();
       } else if (this.ballToEnemyWall != this.meToEnemyWall &&
@@ -528,33 +528,30 @@ function setMasterSlime(ai) {
   };
 }
 
-var slimeAIs = [
-    {name:"Pathetic White Slime",
-     color:'#fff',
-     backImageName:'sky',
-     legacySkyColor:'#00f',
-     legacyGroundColor:'#888',
-     legacyBallColor:'#ff0',
-     newGroundColor:'#ca6',
-     backTextColor:'#000',
-     //initAI:setMasterSlime},
-     initAI:setPatheticWhiteSlime},
-    {name:"Angry Red Slime",
-     color:'#f00',
-     backImageName:'cave',
-     legacySkyColor:'#1e5000',
-     legacyGroundColor:'#444',
-     legacyBallColor:'#88f',
-     newGroundColor:'#444',
-     backTextColor:'#fff',
-     initAI:setAngryRedSlime},
-    {name:"Slime Master",
-     color:'#000',
-     backImageName:'sunset',
-     legacySkyColor:'#623939',
-     legacyGroundColor:'#00a800',
-     legacyBallColor:'#fff',
-     newGroundColor:'#655040',
-     backTextColor:'#fff',
-     initAI:setMasterSlime}
-];
+
+
+var slimeAIs = (function() {
+	var patheticSlime = {
+		name: "Pathetic White Slime",
+		color: '#fff',
+		theme: getSkyTheme(),
+		initAI: setPatheticWhiteSlime
+	};
+	var redSlime = {
+		name: "Angry Red Slime",
+		color: '#f00',
+		theme: getCaveTheme(),
+		initAI: setAngryRedSlime
+	};
+	var slimeMaster = {
+		name: "Slime Master",
+		color: '#000',
+		theme: getSunsetTheme(),
+		initAI: setMasterSlime
+	};
+
+    patheticSlime.next = redSlime;
+    redSlime.next = slimeMaster;
+    slimeMaster.next = null;
+	return [patheticSlime, redSlime, slimeMaster];
+})();

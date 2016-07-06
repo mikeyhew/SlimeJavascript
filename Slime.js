@@ -30,12 +30,7 @@ var courtYPix;
 var pixelsPerUnitX;
 var pixelsPerUnitY;
 var updatesToPaint;
-var legacySkyColor;
-var legacyGroundColor;
-var legacyBallColor;
-var newGroundColor;
-var backImage;
-var backTextColor;
+var background;
 var backImages = {};
 var ballImage;
 var gameIntervalObject;
@@ -139,21 +134,8 @@ function bodyload() {
 	loadImage('images/vball.png', function() {
 		ballImage = this;
 	});
-
-	greenSlimeImage = new Image();
-	greenSlimeImage.src = 'images/slime175green.png';
-	/*
-	greenSlimeImage.onload = function() {
-		slimeLeft.img = this;
-	}
-	*/
-	redSlimeImage = new Image();
-	redSlimeImage.src = 'images/slime175red.png';
-	/*
-	redSlimeImage.onload = function() {
-		slimeRight.img = this;
-	}
-	*/
+	greenSlimeImage = loadImage('images/slime175green.png');
+	redSlimeImage = loadImage('images/slime175red.png');
 
 	toInitialMenu();
 }
@@ -183,11 +165,11 @@ function startOnlineGame() {
 	setMessage('Waiting for opponent...');
 	socket.emit('message type', 'content');
 	socket.on('start', function(message) {
-		start(false);
+		start(false, socket, message.index);
 	});
 }
 
-function start(startAsOnePlayer) {
+function start(startAsOnePlayer, socket, index) {
 	onePlayer = startAsOnePlayer;
 
 	slimeLeftScore = 0;
@@ -197,26 +179,45 @@ function start(startAsOnePlayer) {
 	if (onePlayer) {
 		var slimeAIProps = slimeAIs[nextSlimeIndex];
 		slimeRight.color = slimeAIProps.color;
-		legacySkyColor   = slimeAIProps.legacySkyColor;
-		backImage        = backImages[slimeAIProps.backImageName];
-		backTextColor    = slimeAIProps.backTextColor;
-		legacyGroundColor= slimeAIProps.legacyGroundColor;
-		legacyBallColor  = slimeAIProps.legacyBallColor;
-		newGroundColor   = slimeAIProps.newGroundColor;
+		background = slimeAIProps.theme;
 
-		slimeRight.img   = null;
-		slimeAI          = newSlimeAI(false,slimeAIProps.name);
+		slimeRight.img = null;
+		slimeAI        = newSlimeAI(false,slimeAIProps.name);
 		slimeAIProps.initAI(slimeAI);
+		slimeLeft.getInput = getSinglePlayerInput;
+		slimeRight.getInput = function() {
+			slimeAI.move();
+			return {
+				left: (slimeAI.movement == 1),
+				right: (slimeAI.movement == 2),
+				jump: slimeAI.jumpSet
+			};
+		};
 	} else {
-		legacySkyColor   = '#00f';
-		backImage        = backImages['sky'];
-		backTextColor    = '#000';
-		legacyGroundColor= '#888';
-		legacyBallColor  = '#fff';
-		newGroundColor   = '#ca6';
+		background = getSkyTheme();
 
 		slimeRight.img   = redSlimeImage;
 		slimeAI          = null;
+
+		if (socket) {
+			var otherInput = { left: false, right: false, jump: false };
+			var getOtherInput = function() {
+				return otherInput;
+			};
+			socket.on('move', function(message) {
+				otherInput = message.input;
+			});
+			if (index === 0) {
+				slimeLeft.getInput = wrapInputToNetwork(getSinglePlayerInput, socket, slimeLeft);
+				slimeRight.getInput = getOtherInput;
+			} else {
+				slimeLeft.getInput = getOtherInput;
+				slimeRight.getInput = wrapInputToNetwork(getSinglePlayerInput, socket, slimeRight);
+			}
+		} else {
+			slimeLeft.getInput = getPlayerOneInput;
+			slimeRight.getInput = getPlayerTwoInput;
+		}
 	}
 
 	initRound(true);
@@ -280,17 +281,8 @@ function gameIteration() {
 }
 
 function updateFrame() {
-	if (onePlayer) {
-		slimeAI.move(false); // Move the right slime
-		updateSlimeVelocitiesWithDoubleKeys(slimeLeft,
-			KEY_A,KEY_LEFT,
-			KEY_D,KEY_RIGHT,
-			KEY_W,KEY_UP);
-		updateSlimeVelocities(slimeRight,slimeAI.movement,slimeAI.jumpSet);
-	} else {
-		updateSlimeVelocitiesWithKeys(slimeLeft, KEY_A,KEY_D,KEY_W);
-		updateSlimeVelocitiesWithKeys(slimeRight, KEY_LEFT,KEY_RIGHT,KEY_UP);
-	}
+	updateSlimeVelocities(slimeLeft);
+	updateSlimeVelocities(slimeRight);
 
 	updateSlime(slimeLeft, 50, 445);
 	updateSlime(slimeRight, 555, 950);
@@ -305,54 +297,25 @@ function updateFrame() {
 }
 
 // Game Update Functions
-function updateSlimeVelocities(s,movement,jump) {
-	if (movement == 0) {
-		s.velocityX = 0;
-	} else if (movement == 1) {
-		s.velocityX = -8;
-	} else if (movement == 2) {
-		s.velocityX = 8;
-	} else {
-		throw "slime movement " + movement + " is invalid";
-	}
-	if (jump && s.y == 0) {
-		s.velocityY = 31;
-	}
-}
-function updateSlimeVelocitiesWithKeys(s,left,right,up) {
+function updateSlimeVelocities(slime) {
+	var input = slime.getInput();
 	// update velocities
-	if (keysDown[left]) {
-		if (keysDown[right]) {
-			s.velocityX = 0;
+	if (input.left) {
+		if (input.right) {
+			slime.velocityX = 0;
 		} else {
-			s.velocityX = -8;
+			slime.velocityX = -8;
 		}
-	} else if (keysDown[right]) {
-		s.velocityX = 8;
+	} else if (input.right) {
+		slime.velocityX = 8;
 	} else {
-		s.velocityX = 0;
+		slime.velocityX = 0;
 	}
-	if (s.y == 0 && keysDown[up]) {
-		s.velocityY = 31;
+	if (slime.y == 0 && input.jump) {
+		slime.velocityY = 31;
 	}
 }
-function updateSlimeVelocitiesWithDoubleKeys(s,left1,left2,right1,right2,up1,up2) {
-	// update velocities
-	if (keysDown[left1] || keysDown[left2]) {
-		if (keysDown[right1] || keysDown[right2]) {
-			s.velocityX = 0;
-		} else {
-			s.velocityX = -8;
-		}
-	} else if (keysDown[right1] || keysDown[right2]) {
-		s.velocityX = 8;
-	} else {
-		s.velocityX = 0;
-	}
-	if (s.y == 0 && (keysDown[up1] || keysDown[up2])) {
-		s.velocityY = 31;
-	}
-}
+
 function updateSlime(s, leftLimit, rightLimit) {
 	if (s.velocityX != 0) {
 		s.x += s.velocityX;
@@ -378,7 +341,10 @@ function loadBackground(name, filename) {
 function loadImage(filename, onload) {
 	var image = new Image();
 	image.src = filename;
-	image.onload = onload;
+	if (onload) {
+		image.onload = onload;
+	}
+	return image;
 }
 
 // Objects rendered in the slime engine
@@ -391,29 +357,7 @@ function newLegacyBall(radius,color) {
 		y: 0,
 		velocityX: 0,
 		velocityY: 0,
-		rotation: 0,
-		render: function() {
-			var xPix = this.x * pixelsPerUnitX;
-			var yPix = courtYPix - (this.y * pixelsPerUnitY);
-			// The original game's ball looked bigger then
-			// it was, so we add 2 pixels here to the radius
-			var radiusPix = this.radius * pixelsPerUnitY + 2;
-
-			if (ballImage && !legacyGraphics) {
-				this.rotation += this.velocityX / 100;
-				this.rotation = this.rotation % TWO_PI;
-
-				ctx.translate(xPix, yPix);
-				ctx.rotate(this.rotation);
-				ctx.drawImage(ballImage, -radiusPix, -radiusPix);
-				ctx.setTransform(1,0,0,1,0,0);
-			} else {
-				ctx.fillStyle = legacyBallColor;
-				ctx.beginPath();
-				ctx.arc(xPix, yPix, radiusPix, 0, TWO_PI);
-				ctx.fill();
-			}
-		}
+		rotation: 0
 	};
 }
 function newLegacySlime(onLeft,radius,color) {
@@ -425,43 +369,7 @@ function newLegacySlime(onLeft,radius,color) {
 		x: 0,
 		y: 0,
 		velocityX: 0,
-		velocityY: 0,
-		render: function() {
-			var xPix = this.x * pixelsPerUnitX;
-			var yPix = courtYPix - (this.y * pixelsPerUnitY);
-			var radiusPix = this.radius * pixelsPerUnitY;
-
-			if (this.img && !legacyGraphics) {
-				ctx.drawImage(this.img, xPix - radiusPix, yPix - 38);
-			} else {
-				ctx.fillStyle = this.color;
-				ctx.beginPath();
-				ctx.arc(xPix, yPix, radiusPix, Math.PI, TWO_PI);
-				ctx.fill();
-			}
-
-			// Draw Eyes
-			var eyeX = this.x + (this.onLeft ? 1 : -1)*this.radius/4;
-			var eyeY = this.y + this.radius/2;
-			var eyeXPix = eyeX * pixelsPerUnitX;
-			var eyeYPix = courtYPix - (eyeY * pixelsPerUnitY);
-			ctx.translate(eyeXPix, eyeYPix);
-			ctx.fillStyle = '#fff';
-			ctx.beginPath();
-			ctx.arc(0,0, radiusPix/4, 0, TWO_PI);
-			ctx.fill();
-
-			// Draw Pupil
-			var dx = ball.x - eyeX;
-			var dy = eyeY - ball.y;
-			var dist = Math.sqrt(dx*dx+dy*dy);
-			var rPixOver8 = radiusPix/8;
-			ctx.fillStyle = '#000';
-			ctx.beginPath();
-			ctx.arc(rPixOver8*dx/dist, rPixOver8*dy/dist, rPixOver8, 0, TWO_PI);
-			ctx.fill();
-			ctx.setTransform(1,0,0,1,0,0);
-		}
+		velocityY: 0
 	};
 }
 
@@ -571,64 +479,6 @@ function updateBall() {
 }
 
 
-// Rendering Functions
-function renderGame() {
-	if (updatesToPaint == 0) {
-		console.log("ERROR: render called but not ready to paint");
-	} else {
-		if (updatesToPaint > 1) {
-			console.log("WARNING: render missed " + (updatesToPaint - 1) + " frame(s)");
-		}
-		renderBackground();
-		ctx.fillStyle = '#000';
-		//ctx.font = "20px Georgia";
-		//ctx.fillText("Score: " + slimeLeftScore, 140, 20);
-		//ctx.fillText("Score: " + slimeRightScore, viewWidth - 230, 20);
-		ball.render();
-		slimeLeft.render();
-		slimeRight.render();
-		updatesToPaint = 0;
-	}
-}
-
-function renderBackground()
-{
-	if (legacyGraphics) {
-		ctx.fillStyle=legacySkyColor;
-		ctx.fillRect(0, 0, viewWidth, courtYPix);
-		ctx.fillStyle = legacyGroundColor;
-	} else {
-		ctx.drawImage(backImage, 0, 0);
-		ctx.fillStyle = newGroundColor;
-	}
-	ctx.fillRect(0, courtYPix, viewWidth, viewHeight - courtYPix);
-	ctx.fillStyle='#fff'
-	ctx.fillRect(viewWidth/2-2,7*viewHeight/10,4,viewHeight/10+5);
-	// render scores
-	renderPoints(slimeLeftScore, 30, 40);
-	renderPoints(slimeRightScore, viewWidth - 30, -40);
-}
-
-function renderPoints(score, initialX, xDiff) {
-	ctx.fillStyle = '#ff0';
-	var x = initialX;
-	for (var i = 0; i < score; i++) {
-		ctx.beginPath();
-		ctx.arc(x, 25, 12, 0, TWO_PI);
-		ctx.fill();
-		x += xDiff;
-	}
-	ctx.strokeStyle = backTextColor;
-	ctx.lineWidth = 2;
-	x = initialX;
-	for (var i = 0; i < WIN_AMOUNT; i++) {
-		ctx.beginPath();
-		ctx.arc(x, 25, 12, 0, TWO_PI);
-		ctx.stroke();
-		x += xDiff;
-	}
-}
-
 
 
 function spaceKeyDown() {
@@ -681,12 +531,6 @@ function startNextPoint() {
 	gameState = GAME_STATE_RUNNING;
 }
 function endPoint() {
-	if (slimeAI) {
-		keysDown[KEY_UP] = false;
-		keysDown[KEY_RIGHT] = false;
-		keysDown[KEY_LEFT] = false;
-	}
-
 	if (slimeLeftScore >= WIN_AMOUNT) {
 		endMatch(true);
 		return;
@@ -716,33 +560,6 @@ function endPoint() {
 			startNextPoint();
 		}
 	}, 700);
-}
-
-function renderEndOfPoint(endOfPointText) {
-	var textWidth = ctx.measureText(endOfPointText).width;
-	renderGame();
-	ctx.fillStyle = '#000';
-	ctx.fillText(
-		endOfPointText,
-		(viewWidth - textWidth)/2,
-		courtYPix + (viewHeight - courtYPix)/2);
-}
-
-function updateWindowSize(width,height) {
-	viewWidth = width;
-	viewHeight = height;
-	console.log("ViewSize x: " + width + ", y: " + height);
-	pixelsPerUnitX = width / gameWidth;
-	pixelsPerUnitY = height / gameHeight;
-	console.log("GAMESIZE x: " + gameWidth + ", y: " + gameHeight);
-	console.log("PPU      x: " + pixelsPerUnitX + ", y: " + pixelsPerUnitY);
-	courtYPix = 4 * viewHeight / 5;
-}
-
-function setupView(view) {
-	view.style.position = 'absolute';
-	view.style.left     = '0';
-	view.style.top      = '0';
 }
 
 var logString;
