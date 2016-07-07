@@ -210,18 +210,19 @@ function start(startAsOnePlayer) {
 		slimeAI          = null;
 
 		if (socket) {
-			var otherInput = { left: false, right: false, jump: false };
-			var getOtherInput = function() {
-				return otherInput;
-			};
 			socket.on('move', function(message) {
-				otherInput = message.input;
+				var slime = slimes[message.index];
+				slime.getInput = newStaticInput(message.input);
+				copyOrientation(message.orientation, slime);
+			});
+			socket.on('ball', function(message) {
+				copyOrientation(message, ball);
 			});
 			if (playerIndex === 0) {
 				slimeLeft.getInput = wrapInputToNetwork(getSinglePlayerInput, socket, slimeLeft);
-				slimeRight.getInput = getOtherInput;
+				slimeRight.getInput = newStaticInput();
 			} else {
-				slimeLeft.getInput = getOtherInput;
+				slimeLeft.getInput = newStaticInput();
 				slimeRight.getInput = wrapInputToNetwork(getSinglePlayerInput, socket, slimeRight);
 			}
 		} else {
@@ -383,6 +384,14 @@ function newLegacySlime(onLeft,radius,color) {
 	};
 }
 
+function copyOrientation(source, target) {
+	target = target || {};
+	target.x = source.x;
+	target.y = source.y;
+	target.velocityX = source.velocityX;
+	target.velocityY = source.velocityY;
+	return target;
+}
 
 function collisionBallSlime(s) {
 	var FUDGE = 5; // not sure why this is needed
@@ -432,6 +441,10 @@ function collisionBallSlime(s) {
 			if (physicsLog > 0) {
 				log(" ballVX    " + ball.velocityX);
 				log(" ballVY    " + ball.velocityY);
+			}
+
+			if (socket != null && s === slimes[playerIndex]) {
+				socket.emit('ball', copyOrientation(ball));
 			}
 		}
 	}

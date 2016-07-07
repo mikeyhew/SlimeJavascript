@@ -42,7 +42,7 @@ function startPlayer(index, players) {
 		handleMoveRequest(index, players, message);
 	});
 	socket.on('ball', function(message) {
-		handleMoveRequest(index, players, message);
+		handleBallUpdate(index, players, message);
 	});
 	socket.on('score', function(message) {
 		handleScoreRequest(index, players, message);
@@ -55,6 +55,7 @@ function startPlayer(index, players) {
 
 function handleMoveRequest(index, players, message) {
 	forEachExcept(players, index, function(socket) {
+		message.index = index;
 		socket.emit('move', message);
 	});
 }

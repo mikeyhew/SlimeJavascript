@@ -50,7 +50,7 @@ function getPlayerTwoInput() {
 	};
 }
 
-function wrapInputToNetwork(inputFun, socket) {
+function wrapInputToNetwork(inputFun, socket, slime) {
 	var cached = {
 		left: false,
 		right: false,
@@ -62,9 +62,18 @@ function wrapInputToNetwork(inputFun, socket) {
 		    input.right != cached.right ||
 		    input.jump != cached.jump) {
 			cached = input;
-			var message = { input: input };
+			var message = {
+				input: input,
+				orientation: copyOrientation(slime)
+			};
 			socket.emit('move', message);
 		}
 		return input;
+	};
+}
+
+function newStaticInput(input) {
+	return function() {
+		return input || { left: false, right: false, jump: false };
 	};
 }
