@@ -83,6 +83,7 @@ function loadOptions() {
 }
 
 function bodyload() {
+	var contentDiv = document.getElementById('GameContentDiv');
 	// Create Render objects
 	canvas = document.getElementById('MainCanvas');
 
@@ -99,7 +100,7 @@ function bodyload() {
 	menuDiv = document.getElementById('MainMenuDiv');
 	messageDiv = document.getElementById('MessageDiv');
 
-	screens = [menuDiv, canvas, messageDiv];
+	screens = [menuDiv, contentDiv, messageDiv];
 
 	// Initialize Logging
 	logString = '';
@@ -119,6 +120,8 @@ function bodyload() {
 	});
 	greenSlimeImage = loadImage('images/slime175green.png');
 	redSlimeImage = loadImage('images/slime175red.png');
+
+	initializeInput();
 
 	toInitialMenu();
 }
@@ -209,7 +212,7 @@ function start(startAsOnePlayer) {
 	loadOptions();
 	gameState = GAME_STATE_RUNNING
 	renderBackground(); // clear the field
-	showScreen(canvas);
+	showScreen(document.getElementById('GameContentDiv'));
 	gameIntervalObject = setInterval(gameIteration, 20);
 }
 
@@ -442,8 +445,6 @@ function updateBall() {
 	}
 	return false;
 }
-
-
 
 
 function spaceKeyDown() {

@@ -10,7 +10,12 @@
 	</head>
 	<body onload="bodyload()" style="text-align:center;">
 		<div id="ContentDiv" style="position:relative;margin:15px auto;width:750px;">
-			<canvas id="MainCanvas" width="750" height="375" class="Screen"></canvas>
+			<div id="GameContentDiv" class="Screen">
+				<canvas id="MainCanvas" width="750" height="375"></canvas>
+				<span class="btn menubutton" id="ButtonLeft">Left</span>
+				<span class="btn menubutton" id="ButtonRight">Right</span>
+				<span class="btn menubutton" id="ButtonJump">Jump</span>
+			</div>
 			<div id="MainMenuDiv" class="Screen">
 				<div style="text-align:center;">
 					<h1 style="margin-top:30px;">Slime Volleyball</h1>
