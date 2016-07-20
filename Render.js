@@ -1,3 +1,5 @@
+var TWO_PI = Math.PI*2;
+
 function getSkyTheme() {
 	return {
 		backImageName:'sky',

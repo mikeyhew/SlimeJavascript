@@ -1,5 +1,3 @@
-var physicsLog = 0;
-var TWO_PI = Math.PI*2;
 var WIN_AMOUNT = 7;
 
 
@@ -15,7 +13,8 @@ var MAX_VELOCITY_Y = 22;
 
 // MENU DATA
 var menuDiv;
-var smallMenuDiv;
+var messageDiv;
+var screens = [];
 var onePlayer;
 var nextSlimeIndex;
 
@@ -81,22 +80,11 @@ function hideOptions() {
 function loadOptions() {
 	legacyGraphics = document.getElementById('LegacyGraphics').checked;
 	slowMotion = document.getElementById('SlowMotion').checked;
-	if (document.getElementById('PhysicsLog').checked) {
-		physicsLog = 120;
-	} else {
-		physicsLog = 0;
-	}
 }
 
 function bodyload() {
-	var contentDiv = document.getElementById('GameContentDiv');
-
 	// Create Render objects
-	canvas = document.createElement('canvas');
-	canvas.width = 750;
-	canvas.height = 375;
-	setupView(canvas,true);
-	canvas.style.display = 'none';
+	canvas = document.getElementById('MainCanvas');
 
 	ctx = canvas.getContext("2d");
 	ctx.font = "20px Georgia";
@@ -106,21 +94,12 @@ function bodyload() {
 
 	// Setup Render Data
 	updateWindowSize(canvas.width,canvas.height);
-	contentDiv.appendChild(canvas);
 
 	// Create Menu Objects
-	menuDiv = document.createElement('div');
-	setupView(menuDiv,false);
-	menuDiv.style.width = '750px';
-	menuDiv.style.height = '375px';
+	menuDiv = document.getElementById('MainMenuDiv');
+	messageDiv = document.getElementById('MessageDiv');
 
-	menuDiv.style.background = "#ca6 url('images/sky2.jpg') no-repeat";
-	contentDiv.appendChild(menuDiv);
-
-	// Create options menu div
-	smallMenuDiv = document.createElement('div');
-	smallMenuDiv.style.position = 'absolute';
-
+	screens = [menuDiv, canvas, messageDiv];
 
 	// Initialize Logging
 	logString = '';
@@ -145,15 +124,7 @@ function bodyload() {
 }
 
 function toInitialMenu() {
-	menuDiv.innerHTML =
-		'<div style="text-align:center;">' +
-		'<h1 style="margin-top:30px;">Slime Volleyball</h1>' +
-		'<span onclick="startOnePlayer()" class="btn menubutton">One Player</span>' +
-		'<span onclick="startTwoPlayer()" class="btn menubutton">Two Player</span>' +
-		'<span onclick="startOnlineGame()" class="btn menubutton">Play Online</span>' +
-		'<p>Originally written by Quin Pendragon and Daniel Wedge (http://oneslime.net)<br/>' +
-		'Rewritten by Jonathan Marler</p>'
-		'</div>';
+	showScreen(menuDiv);
 }
 
 // Menu Functions
@@ -238,9 +209,18 @@ function start(startAsOnePlayer) {
 	loadOptions();
 	gameState = GAME_STATE_RUNNING
 	renderBackground(); // clear the field
-	canvas.style.display = 'block';
-	menuDiv.style.display = 'none';
+	showScreen(canvas);
 	gameIntervalObject = setInterval(gameIteration, 20);
+}
+
+function showScreen(screen) {
+	screens.forEach(function(s) {
+		if (s == screen) {
+			s.style.display = 'block';
+		} else {
+			s.style.display = 'none';
+		}
+	});
 }
 
 function initRound(server) {
@@ -270,19 +250,6 @@ function gameIteration() {
 	}
 	if (updatesToPaint > 0) {
 		console.log("WARNING: updating frame before it was rendered");
-	}
-	if (physicsLog > 0) {
-		log("Frame");
-		log(" ball.x  " + ball.x);
-		log(" ball.y  " + ball.y);
-		log(" ball.vx " + ball.velocityX);
-		log(" ball.vy " + ball.velocityY);
-		physicsLog--;
-		if (physicsLog == 0) {
-			var logDom = document.createElement('pre');
-			logDom.innerHTML = logString;
-			document.body.appendChild(logDom);
-		}
 	}
 	updateFrame();
 	updatesToPaint++;
@@ -405,31 +372,10 @@ function collisionBallSlime(s) {
 
 	if (dy > 0 && dist < ball.radius + s.radius && dist > FUDGE) {
 		var oldBall = {x:ball.x,y:ball.y,velocityX:ball.velocityX,velocityY:ball.velocityY};
-		if (physicsLog > 0) {
-			log("Collision:");
-			log(" dx        " + dx);
-			log(" dy        " + dy);
-			log(" dist      " + dist);
-			log(" dvx       " + dVelocityX);
-			log(" dvy       " + dVelocityY);
-			log(" oldBallX  " + ball.x);
-			log(" oldBallY  " + ball.y);
-			log(" [DBG] s.x   : " + s.x);
-			log(" [DBG] s.rad : " + s.radius);
-			log(" [DBG] b.rad : " + ball.radius);
-			log(" [DBG] 0   : " + Math.trunc((s.radius + ball.radius) / 2));
-			log(" [DBG] 1   : " + Math.trunc((s.radius + ball.radius) / 2)*dx);
-			log(" [DBG] 2   : " + Math.trunc(Math.trunc((s.radius + ball.radius) / 2)*dx/dist));
-		}
 		ball.x = s.x + Math.trunc(Math.trunc((s.radius + ball.radius) / 2) * dx / dist);
 		ball.y = s.y + Math.trunc((s.radius + ball.radius) * dy / dist);
 
 		var something = Math.trunc((dx * dVelocityX + dy * dVelocityY) / dist);
-		if (physicsLog > 0) {
-			log(" newBallX  " + ball.x);
-			log(" newBallY  " + ball.y);
-			log(" something " + something);
-		}
 
 		if (something <= 0) {
 			ball.velocityX += Math.trunc(s.velocityX - 2 * dx * something / dist);
@@ -438,10 +384,6 @@ function collisionBallSlime(s) {
 			else if (ball.velocityX >  MAX_VELOCITY_X) ball.velocityX =  MAX_VELOCITY_X;
 			if (     ball.velocityY < -MAX_VELOCITY_Y) ball.velocityY = -MAX_VELOCITY_Y;
 			else if (ball.velocityY >  MAX_VELOCITY_Y) ball.velocityY =  MAX_VELOCITY_Y;
-			if (physicsLog > 0) {
-				log(" ballVX    " + ball.velocityX);
-				log(" ballVY    " + ball.velocityY);
-			}
 
 			if (socket != null && s === slimes[playerIndex]) {
 				socket.emit('ball', copyOrientation(ball));
@@ -535,17 +477,13 @@ function endMatch() {
 		var winningPlayer = 'Player ' + (leftWon ? '1' : '2');
 		setMessage(winningPlayer + ' Wins!', "Press 'space' for rematch...");
 	}
-	menuDiv.style.display = 'block';
-	canvas.style.display = 'none';
 }
 
 function setMessage(message, actionMessage) {
 	actionMessage = actionMessage || '';
-	menuDiv.innerHTML =
-		'<div style="text-align:center;">' +
-		'<h1 style="margin:50px 0 20px 0;">' + message + '</h1>' +
-		actionMessage +
-		'</div>';
+	document.getElementById("MessageHeader").innerHTML = message;
+	document.getElementById("MessageContent").innerHTML = actionMessage;
+	showScreen(messageDiv);
 }
 function startNextPoint() {
 	initRound(leftWon);

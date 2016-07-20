@@ -10,7 +10,25 @@
 	</head>
 	<body onload="bodyload()" style="text-align:center;">
 		<div id="ContentDiv" style="position:relative;margin:15px auto;width:750px;">
-			<div id="GameContentDiv"></div>
+			<canvas id="MainCanvas" width="750" height="375" class="Screen"></canvas>
+			<div id="MainMenuDiv" class="Screen">
+				<div style="text-align:center;">
+					<h1 style="margin-top:30px;">Slime Volleyball</h1>
+					<span onclick="startOnePlayer()" class="btn menubutton">One Player</span>
+					<span onclick="startTwoPlayer()" class="btn menubutton">Two Player</span>
+					<span onclick="startOnlineGame()" class="btn menubutton">Play Online</span>
+					<p>
+						Originally written by Quin Pendragon and Daniel Wedge (http://oneslime.net)<br/>
+						Rewritten by Jonathan Marler
+					</p>
+				</div>
+			</div>
+			<div id="MessageDiv" class="Screen">
+				<div style="text-align:center;">
+					<h1 style="margin:50px 0 20px 0;" id="MessageHeader"></h1>
+					<p id="MessageContent"></p>
+				</div>
+			</div>
 			<div id="OptionsDiv" style="position:relative;width:400px;height:360px;margin:0 auto;background:#eee;display:none;border:3px solid #ca6;">
 				<h2>Options</h2><hr/><br/>
 				<span class="SmallButton" onclick="hideOptions()" style="position:absolute;top:5px;right:5px;font-weight:bold;">
@@ -20,7 +38,6 @@
 					<input id="LegacyGraphics" type="checkbox">Legacy Graphics</input>
 					<br/><br/>
 					<h3>Debug Options</h3><br/>
-					<input id="PhysicsLog" type="checkbox">Enable Physics Log</input>
 					<br/><br/>
 					<h3>Cheats</h3><br/>
 					<input id="SlowMotion" type="checkbox">Slow Motion</input>
